@@ -240,6 +240,9 @@ void setup() {
 // ===                    MAIN PROGRAM LOOP                     ===
 // ================================================================
 
+
+int h = 0;
+
 void loop() {
     // if programming failed, don't try to do anything
     if (!dmpReady) return;
@@ -327,12 +330,36 @@ void loop() {
             mpu.dmpGetAccel(&aa, fifoBuffer);
             mpu.dmpGetGravity(&gravity, &q);
             mpu.dmpGetLinearAccel(&aaReal, &aa, &gravity);
-            //Serial.print("areal\t");
-            Serial.print(aaReal.x);
+            mpu.dmpGetEuler(euler, &q);
+            
+            Serial.print(abs(aaReal.x));
             Serial.print("\t");
-            Serial.print(aaReal.y);
+            Serial.print(abs(aaReal.y));
             Serial.print("\t");
-            Serial.println(aaReal.z);
+            Serial.print(abs(aaReal.z));
+            Serial.print("\t");
+            Serial.println(h);
+            
+            /*
+            Serial.print("\t");
+            Serial.print(euler[0] * 180/M_PI);
+            Serial.print("\t");
+            Serial.print(euler[1] * 180/M_PI);
+            Serial.print("\t");
+            Serial.println(euler[2] * 180/M_PI);
+            
+            */
+
+            int j=0;
+            if (((abs(aaReal.x)>6000) ||(abs(aaReal.y)>6000)||(abs(aaReal.z)>6000)) && h>500){
+              
+              while (j<20){
+                Serial.println(000000000000000000);
+                j++;
+              }
+              
+            }
+            h++;
         #endif
 
         #ifdef OUTPUT_READABLE_WORLDACCEL
