@@ -1,6 +1,7 @@
 int pinIN = 5;
 int pinOUT = 8;
 int lectura;
+int flag = 0;
 
 
 void setup() {
@@ -9,7 +10,7 @@ void setup() {
   TCCR1B = 0;// same for TCCR1B
   TCNT1  = 0;//initialize counter value to 0
   // set compare match register for 1hz increments
-  OCR1A = 65536;// = (16*10^6) / (1*1024) - 1 (must be <65536)
+  OCR1A = 65536;  // = (16*10^6) / (1*1024) - 1 (must be <65536)
   // turn on CTC mode
   TCCR1B |= (1 << WGM12);
   // Set CS10 and CS12 bits for 1024 prescaler
@@ -27,20 +28,27 @@ void setup() {
 void loop() {
   //digitalWrite(pinOUT, HIGH);
   lectura = digitalRead(pinIN);
-  Serial.println(lectura);
+  Serial.print(lectura);
   if(lectura==1){
     TIMSK1 = 0;
     TCNT1 = 0;
   }
+  Serial.print("\t");
+  Serial.print(TCNT1);
+  Serial.print("\t");
+  Serial.println(flag);
   // put your main code here, to run repeatedly:
 }
 
 
 ISR(TIMER1_COMPA_vect){
-  digitalWrite(pinOUT, HIGH);  
-  while(1){
-    Serial.println("asd");
-  }
+  digitalWrite(pinOUT, HIGH);
+  flag =flag+1;
+  TIMSK1 |= (1 << OCIE1A);
+  TCNT1 = 0;
+  //while(1){
+   // Serial.println("asd");
+  //}
 }
 
 
