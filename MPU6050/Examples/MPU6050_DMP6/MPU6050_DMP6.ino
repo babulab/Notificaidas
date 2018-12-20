@@ -1,45 +1,3 @@
-// I2C device class (I2Cdev) demonstration Arduino sketch for MPU6050 class using DMP (MotionApps v2.0)
-// 6/21/2012 by Jeff Rowberg <jeff@rowberg.net>
-// Updates should (hopefully) always be available at https://github.com/jrowberg/i2cdevlib
-//
-// Changelog:
-//      2013-05-08 - added seamless Fastwire support
-//                 - added note about gyro calibration
-//      2012-06-21 - added note about Arduino 1.0.1 + Leonardo compatibility error
-//      2012-06-20 - improved FIFO overflow handling and simplified read process
-//      2012-06-19 - completely rearranged DMP initialization code and simplification
-//      2012-06-13 - pull gyro and accel data from FIFO packet instead of reading directly
-//      2012-06-09 - fix broken FIFO read sequence and change interrupt detection to RISING
-//      2012-06-05 - add gravity-compensated initial reference frame acceleration output
-//                 - add 3D math helper file to DMP6 example sketch
-//                 - add Euler output and Yaw/Pitch/Roll output formats
-//      2012-06-04 - remove accel offset clearing for better results (thanks Sungon Lee)
-//      2012-06-01 - fixed gyro sensitivity to be 2000 deg/sec instead of 250
-//      2012-05-30 - basic DMP initialization working
-
-/* ============================================
-I2Cdev device library code is placed under the MIT license
-Copyright (c) 2012 Jeff Rowberg
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
-===============================================
-*/
 
 // I2Cdev and MPU6050 must be installed as libraries, or else the .cpp/.h files
 // for both classes must be in the include path of your project
@@ -151,7 +109,13 @@ volatile bool mpuInterrupt = false;     // indicates whether MPU interrupt pin h
 void dmpDataReady() {
     mpuInterrupt = true;
 }
-
+int pe = 7;
+int pinIN = 5;
+int pinOUT = 8;
+int lectura;
+//int ciclos = 3;
+int contador = 0;
+int i=0;
 
 
 // ================================================================
@@ -229,9 +193,25 @@ void setup() {
         Serial.print(devStatus);
         Serial.println(F(")"));
     }
-
+    
     // configure LED for output
-    pinMode(LED_PIN, OUTPUT);
+   pinMode(LED_PIN, OUTPUT);
+   //botonnnn
+      //set timer1 interrupt at 1Hz
+  TCCR1A = 0;// set entire TCCR1A register to 0
+  TCCR1B = 0;// same for TCCR1B
+  TCNT1  = 0;//initialize counter value to 0
+  // set compare match register for 1hz increments
+  OCR1A = 65536;// = (16*10^6) / (1*1024) - 1 (must be <65536)
+  // turn on CTC mode
+  TCCR1B |= (1 << WGM12);
+  // Set CS10 and CS12 bits for 1024 prescaler
+  TCCR1B |= (1 << CS12) | (1 << CS10);   
+  // put your setup code here, to run once:
+  pinMode(pinIN, INPUT);
+  pinMode(pinOUT, OUTPUT);
+  sei();//allow interrupts
+  TIMSK1 = 0;
 }
 
 
@@ -242,6 +222,39 @@ void setup() {
 
 
 int h = 0;
+
+int boton(int pin_IN, int ciclos){
+  int flag = 0;
+  TCNT1 = 0;
+  contador = 0;
+  // enable timer compare interrupt
+  TIMSK1 |= (1 << OCIE1A);
+  while (contador< ciclos){
+    lectura = digitalRead(pin_IN);
+    delay(15);
+   // Serial.print(lectura);
+    //Serial.print("\t");
+    //Serial.println(contador);
+    Serial.println("Esta vivo (bien?)");
+    tone(pe,500);
+    delay(5);
+    tone(pe,1000);
+    if (lectura==1){
+      TIMSK1 = 0;
+      TCNT1 = 0;
+      flag = 1;
+      break;
+    }
+  }
+  TIMSK1 = 0;
+  return flag;
+}
+
+
+ISR(TIMER1_COMPA_vect){
+  contador= contador+1;
+  TCNT1  = 0;
+}
 
 void loop() {
     // if programming failed, don't try to do anything
@@ -350,16 +363,26 @@ void loop() {
             
             */
 
-            int j=0;
-            if (((abs(aaReal.x)>6000) ||(abs(aaReal.y)>6000)||(abs(aaReal.z)>6000)) && h>500){
-              
-              while (j<20){
-                Serial.println(000000000000000000);
-                j++;
+            //int j=0;
+            if (((abs(aaReal.x)>4000) ||(abs(aaReal.y)>4000)||(abs(aaReal.z)>4000)) && h>500){
+              int boto=boton(pinIN,4);
+              if (boto==1){
+                while(true){
+                Serial.println("Esta vivo (bien?)");
+                
+                //j++;
+                }
+                }
+              else{
+                while(true){
+                  Serial.println("Se envia mensaje de alerta, tata falleciendo");
+                  tone(pe,100);
+                  //j++;
+                }
               }
-              
             }
             h++;
+            if (h>10000){h=501;}
         #endif
 
         #ifdef OUTPUT_READABLE_WORLDACCEL
